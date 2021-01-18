@@ -149,12 +149,58 @@ QUESTIONS:
 /* Q10: Produce a list of facilities with a total revenue less than 1000.
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
+SELECT 
+    sub.name,
+    SUM(sub.revenue) AS revenue
+FROM
+    (SELECT 
+        b.facid,
+        b.memid, 
+        f.name, 
+        f.guestcost, 
+        f.membercost, 
+        COUNT(b.facid) AS facid_count,
+        CASE
+            WHEN b.memid =0 THEN COUNT(b.facid)*f.guestcost
+            ELSE COUNT(b.facid)*f.membercost
+        END AS 'revenue'
+    FROM Bookings AS b
+    LEFT JOIN Facilities AS f USING facid
+    GROUP BY b.facid, b.memid) AS sub
+GROUP BY sub.facid
+HAVING revenue <=1000;
 
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
-
+SELECT 
+    m.surname,
+    m.firstname,
+    (r.firstname || r.surname) AS 'Recommender'
+FROM Members AS m
+LEFT JOIN Members AS r 
+    ON m.recommendedby = r.memid
+WHERE m.recommendedby != 0
+ORDER BY m.surname, m.firstname
 
 /* Q12: Find the facilities with their usage by member, but not guests */
+SELECT 
+    f.name
+    COUNT(b.memid) AS mem_usage,
+FROM
+    (SELECT facid, memid
+    FROM Bookings
+    WHERE memid !=0) AS b
+LEFT JOIN Facilities AS f USING (facid)
+GROUP BY b.facid;
 
 
 /* Q13: Find the facilities usage by month, but not guests */
-
+SELECT 
+    b.months,
+    COUNT( b.memid ) AS mem_usage
+FROM
+    (SELECT 
+        strftime('%m', starttime) AS months,
+        memid
+FROM Bookings
+WHERE memid !=0) AS b
+GROUP BY b.months;
